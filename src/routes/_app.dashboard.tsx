@@ -224,7 +224,10 @@ function LeadCard({ lead }: { lead: Lead }) {
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.info("Sign in to save leads to your account");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("saved_leads").insert({
       user_id: user.id,
