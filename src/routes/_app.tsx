@@ -24,10 +24,18 @@ function AppLayout() {
           <NavItem to="/leads" icon={Users} label="Saved leads" />
         </nav>
         <div className="border-t border-border p-4">
-          <div className="mb-3 truncate text-xs text-muted-foreground">{user.email}</div>
-          <Button variant="outline" size="sm" className="w-full" onClick={() => { signOut(); navigate({ to: "/" }); }}>
-            <LogOut className="mr-2 h-3.5 w-3.5" /> Sign out
-          </Button>
+          {user ? (
+            <>
+              <div className="mb-3 truncate text-xs text-muted-foreground">{user.email}</div>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => { signOut(); navigate({ to: "/" }); }}>
+                <LogOut className="mr-2 h-3.5 w-3.5" /> Sign out
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" className="w-full" onClick={() => navigate({ to: "/login" })}>
+              Sign in
+            </Button>
+          )}
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
