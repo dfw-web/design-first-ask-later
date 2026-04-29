@@ -23,7 +23,7 @@ type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" 
 
 const SOURCE_LABEL: Record<LeadSourceId, string> = {
   mock: "Demo data",
-  google_places: "Google Places",
+  openstreetmap: "OpenStreetMap",
 };
 
 function DashboardPage() {
