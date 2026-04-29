@@ -9,6 +9,7 @@ import { generateMockLeads, whatsappLink, generatePitch, type GeneratedLead } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
+import { PitchGenerator } from "@/components/PitchGenerator";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
@@ -260,6 +261,7 @@ function LeadCard({ lead }: { lead: GeneratedLead }) {
         <Button size="sm" variant="outline" onClick={handleCopyLink} disabled={!lead.phone}>
           <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy link
         </Button>
+        <PitchGenerator lead={lead} />
         <Button size="sm" variant="outline" onClick={handleSave} disabled={saving}>
           <Bookmark className="mr-1.5 h-3.5 w-3.5" /> {saving ? "Saving..." : "Save"}
         </Button>
