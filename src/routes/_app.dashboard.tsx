@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy } from "lucide-react";
-import { generateMockLeads, whatsappLink, generatePitch, type GeneratedLead } from "@/lib/leadGenerator";
+import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info } from "lucide-react";
+import { searchLeads, whatsappLink, generatePitch, type Lead } from "@/lib/leads";
+import type { LeadSourceId } from "@/lib/leads/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
@@ -20,20 +21,40 @@ const COUNTRIES = ["Nigeria", "Ghana", "Kenya", "South Africa", "Egypt"];
 
 type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" | "no-social" | "wa-ready";
 
+const SOURCE_LABEL: Record<LeadSourceId, string> = {
+  mock: "Demo data",
+  google_places: "Google Places",
+};
+
 function DashboardPage() {
   const [niche, setNiche] = useState("dentist");
   const [city, setCity] = useState("Lagos");
   const [country, setCountry] = useState("Nigeria");
-  const [results, setResults] = useState<GeneratedLead[]>([]);
+  const [results, setResults] = useState<Lead[]>([]);
   const [searched, setSearched] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<LeadSourceId>("mock");
+  const [isDemo, setIsDemo] = useState(false);
+  const [notice, setNotice] = useState<string | undefined>();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!niche.trim() || !city.trim()) return;
-    setResults(generateMockLeads(niche, city, country, 12));
-    setSearched(true);
+    setLoading(true);
     setFilter("all");
+    try {
+      const res = await searchLeads({ niche, city, country, limit: 12 });
+      setResults(res.leads);
+      setSource(res.source);
+      setIsDemo(res.isDemo);
+      setNotice(res.notice);
+      setSearched(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -80,8 +101,9 @@ function DashboardPage() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button type="submit" className="w-full md:w-auto">
-              <Search className="mr-2 h-4 w-4" /> Search
+            <Button type="submit" className="w-full md:w-auto" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              {loading ? "Searching…" : "Search"}
             </Button>
           </div>
         </div>
@@ -91,8 +113,26 @@ function DashboardPage() {
         <>
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold">{filtered.length} leads found</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">{filtered.length} leads found</h2>
+                <span
+                  className={
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider " +
+                    (isDemo
+                      ? "border-warning/40 bg-warning/10 text-warning"
+                      : "border-success/40 bg-success/10 text-success")
+                  }
+                  title={notice}
+                >
+                  {SOURCE_LABEL[source]}
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">{niche} · {city}, {country}</p>
+              {notice && (
+                <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3" /> {notice}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {([
@@ -143,7 +183,7 @@ function DashboardPage() {
   );
 }
 
-function LeadCard({ lead }: { lead: GeneratedLead }) {
+function LeadCard({ lead }: { lead: Lead }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
