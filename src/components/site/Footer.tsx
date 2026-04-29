@@ -31,9 +31,20 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
           <span>© 2026 NaijaClientr. All rights reserved.</span>
-          <span>Made for freelancers in Africa 🌍</span>
+          <span>
+            Built by{" "}
+            <a
+              href="https://nexloftdigital.com"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-foreground hover:underline"
+            >
+              Nexloft Digital
+            </a>{" "}
+            — nexloftdigital.com
+          </span>
         </div>
       </div>
     </footer>
