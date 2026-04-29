@@ -101,8 +101,9 @@ function DashboardPage() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button type="submit" className="w-full md:w-auto">
-              <Search className="mr-2 h-4 w-4" /> Search
+            <Button type="submit" className="w-full md:w-auto" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              {loading ? "Searching…" : "Search"}
             </Button>
           </div>
         </div>
@@ -112,8 +113,26 @@ function DashboardPage() {
         <>
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold">{filtered.length} leads found</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">{filtered.length} leads found</h2>
+                <span
+                  className={
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider " +
+                    (isDemo
+                      ? "border-warning/40 bg-warning/10 text-warning"
+                      : "border-success/40 bg-success/10 text-success")
+                  }
+                  title={notice}
+                >
+                  {SOURCE_LABEL[source]}
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">{niche} · {city}, {country}</p>
+              {notice && (
+                <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3" /> {notice}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {([
@@ -164,7 +183,7 @@ function DashboardPage() {
   );
 }
 
-function LeadCard({ lead }: { lead: GeneratedLead }) {
+function LeadCard({ lead }: { lead: Lead }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
