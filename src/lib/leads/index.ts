@@ -3,26 +3,26 @@
 
 import { googlePlacesProvider } from "./providers/googlePlaces";
 import { mockProvider } from "./providers/mock";
-import type { Lead, LeadSearchInput, LeadSearchResult } from "./types";
+import type { LeadSearchInput, LeadSearchResult } from "./types";
 
 export type { Lead, LeadSearchInput, LeadSearchResult, LeadSourceId, RawLead } from "./types";
 export { enrichLead, enrichLeads } from "./scoring";
 
 /**
- * Search leads. Always tries the real (Google Places) provider first by hitting
- * our server route — the server decides whether a real key is configured and,
- * if not, transparently returns demo data with `isDemo: true`. If the network
- * call itself fails, we fall back to the local mock so the UI never breaks.
+ * Search leads via the server (which decides real-vs-demo based on env).
+ * Throws on hard server errors so the UI can show a real toast — only falls
+ * back to local mock when the network itself fails.
  */
 export async function searchLeads(input: LeadSearchInput): Promise<LeadSearchResult> {
   try {
     return await googlePlacesProvider.search(input);
   } catch (e) {
-    console.warn("[leads] real provider failed, falling back to mock:", e);
+    // Network-level failure (offline, DNS, etc.) → graceful local fallback.
+    console.warn("[leads] network error, using local mock:", e);
     const fallback = await mockProvider.search(input);
     return {
       ...fallback,
-      notice: "Couldn't reach the live data provider — showing demo data instead.",
+      notice: "Network error — showing demo data instead.",
     };
   }
 }
