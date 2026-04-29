@@ -33,7 +33,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "NaijaClientr — Find clients in your city every day" },
       { name: "description", content: "Discover local businesses that need digital services. Built for freelancers and agencies in Africa." },
-      { name: "author", content: "NaijaClientr" },
+      { name: "author", content: "Nexloft Digital" },
       { property: "og:title", content: "NaijaClientr" },
       { property: "og:description", content: "Find clients in your city every day." },
       { property: "og:type", content: "website" },

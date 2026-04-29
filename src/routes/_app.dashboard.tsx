@@ -23,7 +23,7 @@ type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" 
 
 const SOURCE_LABEL: Record<LeadSourceId, string> = {
   mock: "Demo data",
-  google_places: "Google Places",
+  openstreetmap: "OpenStreetMap",
 };
 
 function DashboardPage() {
@@ -128,6 +128,31 @@ function DashboardPage() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">{niche} · {city}, {country}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                  Powered by{" "}
+                  <a
+                    href="https://www.openstreetmap.org/copyright"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    OpenStreetMap
+                  </a>
+                </span>
+                <span aria-hidden>·</span>
+                <span>
+                  Built by{" "}
+                  <a
+                    href="https://nexloftdigital.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium underline hover:text-foreground"
+                  >
+                    Nexloft Digital
+                  </a>
+                </span>
+              </div>
               {notice && (
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Info className="h-3 w-3" /> {notice}

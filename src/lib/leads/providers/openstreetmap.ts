@@ -1,13 +1,12 @@
-// Google Places provider (client-side wrapper).
-// Calls our own server route /api/leads/search, which holds the
-// GOOGLE_PLACES_API_KEY and talks to Google. The key is never shipped to the
-// browser — see Network tab: only requests to /api/leads/search are made.
+// OpenStreetMap (Nominatim) provider — client-side wrapper.
+// Talks to our own /api/leads/search route which proxies Nominatim
+// (so we can attach the required User-Agent header server-side).
 
 import type { LeadProvider, LeadSearchResult } from "../types";
 
-export const googlePlacesProvider: LeadProvider = {
-  id: "google_places",
-  isAvailable: () => true, // server decides real-vs-demo
+export const openStreetMapProvider: LeadProvider = {
+  id: "openstreetmap",
+  isAvailable: () => true,
   async search(input) {
     const res = await fetch("/api/leads/search", {
       method: "POST",
@@ -21,7 +20,7 @@ export const googlePlacesProvider: LeadProvider = {
         const data = (await res.json()) as { error?: string };
         if (data?.error) message = data.error;
       } catch {
-        // ignore JSON parse errors
+        // ignore
       }
       throw new Error(message);
     }
