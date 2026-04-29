@@ -1,15 +1,13 @@
 // Google Places provider (client-side wrapper).
-// Calls our own server route /api/leads/search, which holds the GOOGLE_PLACES_API_KEY
-// and talks to Google. The key is never shipped to the browser.
+// Calls our own server route /api/leads/search, which holds the
+// GOOGLE_PLACES_API_KEY and talks to Google. The key is never shipped to the
+// browser — see Network tab: only requests to /api/leads/search are made.
 
 import type { LeadProvider, LeadSearchResult } from "../types";
 
 export const googlePlacesProvider: LeadProvider = {
   id: "google_places",
-  // Whether the provider is "available" is decided server-side (checks env).
-  // From the client we always allow the attempt; the server returns isDemo=true
-  // with a notice if the key is missing, and we transparently fall back.
-  isAvailable: () => true,
+  isAvailable: () => true, // server decides real-vs-demo
   async search(input) {
     const res = await fetch("/api/leads/search", {
       method: "POST",
@@ -18,9 +16,15 @@ export const googlePlacesProvider: LeadProvider = {
     });
 
     if (!res.ok) {
-      throw new Error(`Lead search failed (${res.status})`);
+      let message = `Lead search failed (${res.status})`;
+      try {
+        const data = (await res.json()) as { error?: string };
+        if (data?.error) message = data.error;
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new Error(message);
     }
-    const data = (await res.json()) as LeadSearchResult;
-    return data;
+    return (await res.json()) as LeadSearchResult;
   },
 };
