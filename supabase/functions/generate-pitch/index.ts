@@ -1,5 +1,5 @@
 // Edge function: generate-pitch
-// Uses Lovable AI Gateway to generate channel- and tone-specific outreach pitches.
+// Generates channel- and tone-specific outreach pitches via the configured AI gateway.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
