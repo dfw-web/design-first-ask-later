@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      lead_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lead_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "saved_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_leads: {
+        Row: {
+          business_name: string
+          city: string
+          country: string
+          created_at: string
+          deal_value: number | null
+          email: string | null
+          facebook: string | null
+          follow_up_at: string | null
+          id: string
+          instagram: string | null
+          last_contacted_at: string | null
+          lead_score: number | null
+          niche: string
+          number_validity: string | null
+          outreach_status: string | null
+          phone: string | null
+          recommended_service: string | null
+          reviews_estimate: number | null
+          status: string
+          updated_at: string
+          user_id: string
+          website: string | null
+          website_quality_score: number | null
+          whatsapp_label: string | null
+          whatsapp_score: number | null
+        }
+        Insert: {
+          business_name: string
+          city: string
+          country?: string
+          created_at?: string
+          deal_value?: number | null
+          email?: string | null
+          facebook?: string | null
+          follow_up_at?: string | null
+          id?: string
+          instagram?: string | null
+          last_contacted_at?: string | null
+          lead_score?: number | null
+          niche: string
+          number_validity?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          recommended_service?: string | null
+          reviews_estimate?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          website_quality_score?: number | null
+          whatsapp_label?: string | null
+          whatsapp_score?: number | null
+        }
+        Update: {
+          business_name?: string
+          city?: string
+          country?: string
+          created_at?: string
+          deal_value?: number | null
+          email?: string | null
+          facebook?: string | null
+          follow_up_at?: string | null
+          id?: string
+          instagram?: string | null
+          last_contacted_at?: string | null
+          lead_score?: number | null
+          niche?: string
+          number_validity?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          recommended_service?: string | null
+          reviews_estimate?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          website_quality_score?: number | null
+          whatsapp_label?: string | null
+          whatsapp_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
