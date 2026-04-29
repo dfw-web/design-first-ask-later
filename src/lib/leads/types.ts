@@ -50,7 +50,7 @@ export interface LeadSearchInput {
   limit?: number;
 }
 
-export type LeadSourceId = "mock" | "google_places";
+export type LeadSourceId = "mock" | "openstreetmap";
 
 export interface LeadSearchResult {
   leads: Lead[];

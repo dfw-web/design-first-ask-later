@@ -1,7 +1,7 @@
 // Public entry point for the lead-generation layer.
 // Components import from here, never from a specific provider.
 
-import { googlePlacesProvider } from "./providers/googlePlaces";
+import { openStreetMapProvider } from "./providers/openstreetmap";
 import { mockProvider } from "./providers/mock";
 import type { LeadSearchInput, LeadSearchResult } from "./types";
 
@@ -9,15 +9,13 @@ export type { Lead, LeadSearchInput, LeadSearchResult, LeadSourceId, RawLead } f
 export { enrichLead, enrichLeads } from "./scoring";
 
 /**
- * Search leads via the server (which decides real-vs-demo based on env).
- * Throws on hard server errors so the UI can show a real toast — only falls
- * back to local mock when the network itself fails.
+ * Search leads via the server (which calls OpenStreetMap Nominatim).
+ * Falls back to local mock only on hard network errors.
  */
 export async function searchLeads(input: LeadSearchInput): Promise<LeadSearchResult> {
   try {
-    return await googlePlacesProvider.search(input);
+    return await openStreetMapProvider.search(input);
   } catch (e) {
-    // Network-level failure (offline, DNS, etc.) → graceful local fallback.
     console.warn("[leads] network error, using local mock:", e);
     const fallback = await mockProvider.search(input);
     return {
@@ -27,7 +25,7 @@ export async function searchLeads(input: LeadSearchInput): Promise<LeadSearchRes
   }
 }
 
-// --- Outreach helpers (kept here so they live with the leads domain) ---
+// --- Outreach helpers ---
 
 export function whatsappLink(phone: string | null, message?: string) {
   if (!phone) return "#";

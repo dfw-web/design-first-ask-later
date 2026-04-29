@@ -1,8 +1,8 @@
 // Server route: POST /api/leads/search
-// Real provider: Google Places API (New) Text Search.
-// - Falls back to mock with isDemo:true ONLY when GOOGLE_PLACES_API_KEY is unset.
-// - On Google API errors, returns a real error so the user can fix it.
+// Real provider: OpenStreetMap Nominatim (free, no API key).
+// - Sends required User-Agent header (Nominatim usage policy).
 // - In-memory cache (5 min) for instant repeat searches.
+// - Falls back to mock with isDemo:true on Nominatim errors.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
@@ -17,20 +17,28 @@ const InputSchema = z.object({
   limit: z.number().int().min(1).max(40).optional(),
 });
 
-interface PlaceTextSearchResult {
-  places?: Array<{
-    id: string;
-    displayName?: { text: string };
-    formattedAddress?: string;
-    nationalPhoneNumber?: string;
-    internationalPhoneNumber?: string;
-    websiteUri?: string;
-    googleMapsUri?: string;
-    userRatingCount?: number;
-    rating?: number;
-    priceLevel?: string;
-    businessStatus?: string;
-  }>;
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+  name?: string;
+  type?: string;
+  class?: string;
+  lat: string;
+  lon: string;
+  address?: {
+    amenity?: string;
+    shop?: string;
+    office?: string;
+    house_number?: string;
+    road?: string;
+    suburb?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    country?: string;
+    postcode?: string;
+  };
 }
 
 function jsonResponse(body: unknown, status = 200) {
@@ -40,90 +48,82 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-// --- tiny in-memory cache (per Worker instance) ---
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; result: LeadSearchResult }>();
 function cacheKey(input: z.infer<typeof InputSchema>) {
   return `${input.niche.toLowerCase().trim()}|${input.city.toLowerCase().trim()}|${input.country.toLowerCase().trim()}|${input.limit ?? 12}`;
 }
 
-async function searchGooglePlaces(
-  input: z.infer<typeof InputSchema>,
-  apiKey: string,
-): Promise<{ raws: RawLead[]; httpStatus: number }> {
-  const limit = input.limit ?? 12;
-  // Phrase the query so Google biases to the location and category.
-  const textQuery = `top ${input.niche} in ${input.city}, ${input.country}`;
+function formatAddress(r: NominatimResult): string {
+  const a = r.address ?? {};
+  const parts = [
+    [a.house_number, a.road].filter(Boolean).join(" "),
+    a.suburb,
+    a.city ?? a.town ?? a.village,
+    a.state,
+    a.country,
+  ].filter((p): p is string => !!p && p.length > 0);
+  return parts.length ? parts.join(", ") : r.display_name;
+}
 
-  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
+function businessNameFor(r: NominatimResult, fallbackNiche: string): string {
+  if (r.name && r.name.trim().length > 0) return r.name;
+  const a = r.address ?? {};
+  return a.amenity ?? a.shop ?? a.office ?? r.display_name.split(",")[0] ?? fallbackNiche;
+}
+
+async function searchNominatim(
+  input: z.infer<typeof InputSchema>,
+): Promise<RawLead[]> {
+  const limit = input.limit ?? 12;
+  const q = `${input.niche} ${input.city} ${input.country}`;
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", q);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("limit", String(Math.max(10, limit)));
+
+  const res = await fetch(url.toString(), {
     headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      // Field mask is required and controls cost. Keep it tight.
-      "X-Goog-FieldMask": [
-        "places.id",
-        "places.displayName",
-        "places.formattedAddress",
-        "places.nationalPhoneNumber",
-        "places.internationalPhoneNumber",
-        "places.websiteUri",
-        "places.googleMapsUri",
-        "places.userRatingCount",
-        "places.rating",
-        "places.priceLevel",
-        "places.businessStatus",
-      ].join(","),
+      "User-Agent": "NexloftDigital/1.0",
+      Accept: "application/json",
     },
-    body: JSON.stringify({
-      textQuery,
-      pageSize: 20, // Places max per page; we'll trim client-side
-      // Region biasing: ISO 3166-1 alpha-2 hint helps disambiguate.
-      regionCode: regionCodeFor(input.country),
-    }),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    const err = new Error(`Google Places ${res.status}: ${text.slice(0, 300)}`);
+    const err = new Error(`Nominatim ${res.status}: ${text.slice(0, 300)}`);
     (err as Error & { status?: number }).status = res.status;
     throw err;
   }
 
-  const data = (await res.json()) as PlaceTextSearchResult;
-  const places = (data.places ?? []).filter((p) => p.businessStatus !== "CLOSED_PERMANENTLY");
+  const data = (await res.json()) as NominatimResult[];
 
-  const raws: RawLead[] = places.slice(0, limit).map((p) => ({
-    business_name: p.displayName?.text ?? "Unknown business",
-    niche: input.niche,
-    city: input.city,
-    country: input.country,
-    phone: p.internationalPhoneNumber ?? p.nationalPhoneNumber ?? null,
-    email: null, // Places API does not expose email
-    website: p.websiteUri ?? null,
-    instagram: null,
-    facebook: null,
-    reviews_estimate: p.userRatingCount ?? 0,
-    website_quality_score: 0, // inferred by scoring layer
-    source_id: p.id,
-    source: "google_places",
-  }));
-
-  // Sort: most reviews first — proxy for "real, established business"
-  raws.sort((a, b) => b.reviews_estimate - a.reviews_estimate);
-
-  return { raws, httpStatus: res.status };
-}
-
-function regionCodeFor(country: string): string | undefined {
-  const map: Record<string, string> = {
-    Nigeria: "NG",
-    Ghana: "GH",
-    Kenya: "KE",
-    "South Africa": "ZA",
-    Egypt: "EG",
-  };
-  return map[country];
+  return data.slice(0, limit).map((r) => {
+    const business_name = businessNameFor(r, input.niche);
+    const a = r.address ?? {};
+    const cityName = a.city ?? a.town ?? a.village ?? input.city;
+    const countryName = a.country ?? input.country;
+    return {
+      business_name,
+      niche: input.niche,
+      city: cityName,
+      country: countryName,
+      phone: null,
+      email: null,
+      website: null,
+      instagram: null,
+      facebook: null,
+      reviews_estimate: 0,
+      source_id: String(r.place_id),
+      source: "openstreetmap",
+      // Stash address + type for the UI via business_name fallback isn't great;
+      // we put address in a side-channel by appending below in enrichment.
+      // (Keeps RawLead shape unchanged.)
+      _address: formatAddress(r),
+      _location_type: r.type ?? r.class ?? null,
+    } as RawLead & { _address: string; _location_type: string | null };
+  });
 }
 
 export const Route = createFileRoute("/api/leads/search")({
@@ -146,20 +146,6 @@ export const Route = createFileRoute("/api/leads/search")({
         }
         const input = parsed.data;
 
-        const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-
-        // No real provider configured → demo mode (intentional fallback).
-        if (!apiKey) {
-          const leads = enrichLeads(buildMockRawLeads(input));
-          return jsonResponse({
-            leads,
-            source: "mock",
-            isDemo: true,
-            notice: "Demo data. Add GOOGLE_PLACES_API_KEY to pull real businesses.",
-          } satisfies LeadSearchResult);
-        }
-
-        // Cache hit → instant.
         const key = cacheKey(input);
         const cached = cache.get(key);
         if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
@@ -167,29 +153,32 @@ export const Route = createFileRoute("/api/leads/search")({
         }
 
         try {
-          const { raws } = await searchGooglePlaces(input, apiKey);
+          const raws = await searchNominatim(input);
           const result: LeadSearchResult = {
             leads: enrichLeads(raws),
-            source: "google_places",
+            source: "openstreetmap",
             isDemo: false,
-            notice: raws.length === 0
-              ? "No results from Google Places for that niche + city."
-              : undefined,
+            notice:
+              raws.length === 0
+                ? "No results from OpenStreetMap for that niche + city."
+                : undefined,
           };
           cache.set(key, { at: Date.now(), result });
           return jsonResponse(result);
         } catch (e) {
           const err = e as Error & { status?: number };
-          console.error("[/api/leads/search] Google Places error:", err.message);
-          // Return real error so user can fix the key/quota — DON'T silently mask.
-          const status = err.status ?? 502;
-          const userMessage =
-            status === 403
-              ? "Google rejected the API key. Check that the key is valid and that the Places API (New) is enabled for it."
-              : status === 429
-                ? "Google Places quota or rate limit reached. Try again in a minute."
-                : "Couldn't reach Google Places. Check the server logs for details.";
-          return jsonResponse({ error: userMessage }, status);
+          console.error("[/api/leads/search] Nominatim error:", err.message);
+          // Graceful fallback to demo mode so the app stays usable.
+          const result: LeadSearchResult = {
+            leads: enrichLeads(buildMockRawLeads(input)),
+            source: "mock",
+            isDemo: true,
+            notice:
+              err.status === 429
+                ? "OpenStreetMap rate limit reached — showing demo data."
+                : "Couldn't reach OpenStreetMap — showing demo data.",
+          };
+          return jsonResponse(result);
         }
       },
     },
