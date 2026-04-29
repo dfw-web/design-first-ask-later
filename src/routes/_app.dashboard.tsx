@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy } from "lucide-react";
-import { generateMockLeads, whatsappLink, generatePitch, type GeneratedLead } from "@/lib/leadGenerator";
+import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info } from "lucide-react";
+import { searchLeads, whatsappLink, generatePitch, type Lead } from "@/lib/leads";
+import type { LeadSourceId } from "@/lib/leads/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
@@ -20,20 +21,40 @@ const COUNTRIES = ["Nigeria", "Ghana", "Kenya", "South Africa", "Egypt"];
 
 type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" | "no-social" | "wa-ready";
 
+const SOURCE_LABEL: Record<LeadSourceId, string> = {
+  mock: "Demo data",
+  google_places: "Google Places",
+};
+
 function DashboardPage() {
   const [niche, setNiche] = useState("dentist");
   const [city, setCity] = useState("Lagos");
   const [country, setCountry] = useState("Nigeria");
-  const [results, setResults] = useState<GeneratedLead[]>([]);
+  const [results, setResults] = useState<Lead[]>([]);
   const [searched, setSearched] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<LeadSourceId>("mock");
+  const [isDemo, setIsDemo] = useState(false);
+  const [notice, setNotice] = useState<string | undefined>();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!niche.trim() || !city.trim()) return;
-    setResults(generateMockLeads(niche, city, country, 12));
-    setSearched(true);
+    setLoading(true);
     setFilter("all");
+    try {
+      const res = await searchLeads({ niche, city, country, limit: 12 });
+      setResults(res.leads);
+      setSource(res.source);
+      setIsDemo(res.isDemo);
+      setNotice(res.notice);
+      setSearched(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filtered = useMemo(() => {
