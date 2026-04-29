@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate, Outlet } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Search, LayoutDashboard, Users, LogOut } from "lucide-react";
