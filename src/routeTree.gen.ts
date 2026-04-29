@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLeadsRouteImport } from './routes/_app.leads'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as ApiLeadsSearchRouteImport } from './routes/api/leads.search'
+import { Route as ApiLeadsDiagRouteImport } from './routes/api/leads._diag'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -57,6 +58,11 @@ const ApiLeadsSearchRoute = ApiLeadsSearchRouteImport.update({
   path: '/api/leads/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLeadsDiagRoute = ApiLeadsDiagRouteImport.update({
+  id: '/api/leads/_diag',
+  path: '/api/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
   '/leads': typeof AppLeadsRoute
+  '/api/leads': typeof ApiLeadsDiagRoute
   '/api/leads/search': typeof ApiLeadsSearchRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
   '/leads': typeof AppLeadsRoute
+  '/api/leads': typeof ApiLeadsDiagRoute
   '/api/leads/search': typeof ApiLeadsSearchRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/leads': typeof AppLeadsRoute
+  '/api/leads/_diag': typeof ApiLeadsDiagRoute
   '/api/leads/search': typeof ApiLeadsSearchRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard'
     | '/leads'
+    | '/api/leads'
     | '/api/leads/search'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard'
     | '/leads'
+    | '/api/leads'
     | '/api/leads/search'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_app/dashboard'
     | '/_app/leads'
+    | '/api/leads/_diag'
     | '/api/leads/search'
   fileRoutesById: FileRoutesById
 }
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
   SignupRoute: typeof SignupRoute
+  ApiLeadsDiagRoute: typeof ApiLeadsDiagRoute
   ApiLeadsSearchRoute: typeof ApiLeadsSearchRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLeadsSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/leads/_diag': {
+      id: '/api/leads/_diag'
+      path: '/api/leads'
+      fullPath: '/api/leads'
+      preLoaderRoute: typeof ApiLeadsDiagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -206,8 +226,18 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
   SignupRoute: SignupRoute,
+  ApiLeadsDiagRoute: ApiLeadsDiagRoute,
   ApiLeadsSearchRoute: ApiLeadsSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
