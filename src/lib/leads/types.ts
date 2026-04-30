@@ -1,5 +1,5 @@
 // Shared types for the lead-generation layer.
-// All providers (mock, Google Places, Yelp, etc.) return data shaped like `Lead`.
+// All providers (mock, OpenStreetMap, etc.) return data shaped like `Lead`.
 
 export type WhatsAppLabel =
   | "Highly Likely on WhatsApp"
@@ -12,6 +12,8 @@ export type NumberValidity =
   | "Suspicious Format"
   | "Incomplete Number"
   | "Invalid Number";
+
+export type LeadQualityLabel = "Hot Lead" | "Medium Opportunity" | "Low Priority";
 
 /** Raw lead before enrichment — what a provider produces from its source. */
 export interface RawLead {
@@ -31,6 +33,14 @@ export interface RawLead {
   source_id?: string;
   /** Which provider returned this row. */
   source: LeadSourceId;
+  /** Optional address string from provider. */
+  address?: string | null;
+  /** Optional location type/category from provider. */
+  location_type?: string | null;
+  /** Latitude for dedup / mapping. */
+  lat?: number | null;
+  /** Longitude for dedup / mapping. */
+  lon?: number | null;
 }
 
 /** Fully enriched lead returned to the UI. */
@@ -41,6 +51,22 @@ export interface Lead extends RawLead {
   whatsapp_label: WhatsAppLabel;
   number_validity: NumberValidity;
   recommended_service: string;
+  /** Hot/Medium/Low bucket from lead_score. */
+  quality_label: LeadQualityLabel;
+  /** One-line "why this lead is good". */
+  opportunity_reason: string;
+  /** Pre-built Google Maps search link. */
+  maps_url: string;
+  /** Pre-built WhatsApp link if phone present. */
+  whatsapp_url: string | null;
+  /** Pre-built quick-discovery links for "Find More Info". */
+  find_more: {
+    google: string;
+    maps: string;
+    instagram: string;
+  };
+  /** ISO date when this lead was first found. */
+  found_at: string;
 }
 
 export interface LeadSearchInput {
