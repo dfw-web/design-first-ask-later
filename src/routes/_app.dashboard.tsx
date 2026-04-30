@@ -438,6 +438,9 @@ function LeadCard({ lead }: { lead: Lead }) {
         <Button size="sm" variant="outline" onClick={handleCopyContact}>
           <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy contact
         </Button>
+        <Button size="sm" variant="outline" onClick={handleEmailPitch}>
+          <Mail className="mr-1.5 h-3.5 w-3.5" /> Email pitch
+        </Button>
         <PitchGenerator lead={lead} />
         <Button size="sm" variant="outline" onClick={handleSave} disabled={saving}>
           <Bookmark className="mr-1.5 h-3.5 w-3.5" /> {saving ? "Saving..." : "Save"}
