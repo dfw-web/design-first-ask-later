@@ -22,7 +22,19 @@ export const Route = createFileRoute("/_app/dashboard")({
 const NICHES = ["dentist", "hotel", "restaurant", "salon", "lawyer", "church", "school", "boutique", "hospital"];
 const COUNTRIES = ["Nigeria", "Ghana", "Kenya", "South Africa", "Egypt"];
 
-type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" | "no-social" | "wa-ready";
+type Filter =
+  | "all"
+  | "no-website"
+  | "has-phone"
+  | "has-email"
+  | "has-whatsapp"
+  | "high-score"
+  | "low-reviews"
+  | "no-social"
+  | "wa-ready"
+  | "hot"
+  | "medium"
+  | "low";
 
 const SOURCE_LABEL: Record<LeadSourceId, string> = {
   mock: "Demo data",
