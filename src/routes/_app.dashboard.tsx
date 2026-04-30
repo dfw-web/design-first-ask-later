@@ -187,29 +187,39 @@ function DashboardPage() {
                 </p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                ["all", "All"],
-                ["wa-ready", "WhatsApp Ready"],
-                ["no-website", "No website"],
-                ["has-phone", "Has phone"],
-                ["high-score", "High score"],
-                ["low-reviews", "Low reviews"],
-                ["no-social", "No social"],
-              ] as [Filter, string][]).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setFilter(k)}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
-                    (filter === k
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background text-muted-foreground hover:text-foreground")
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-col items-end gap-2">
+              <Button size="sm" variant="outline" onClick={handleExport} disabled={!filtered.length}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
+              </Button>
+              <div className="flex flex-wrap justify-end gap-2">
+                {([
+                  ["all", "All"],
+                  ["hot", "🔥 Hot"],
+                  ["medium", "Medium"],
+                  ["low", "Low"],
+                  ["has-phone", "Has phone"],
+                  ["has-email", "Has email"],
+                  ["has-whatsapp", "Has WhatsApp"],
+                  ["no-website", "No website"],
+                  ["no-social", "No social"],
+                  ["wa-ready", "WA Ready"],
+                  ["high-score", "High score"],
+                  ["low-reviews", "Low reviews"],
+                ] as [Filter, string][]).map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => setFilter(k)}
+                    className={
+                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
+                      (filter === k
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
