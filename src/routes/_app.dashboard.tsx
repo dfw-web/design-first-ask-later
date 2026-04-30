@@ -263,7 +263,8 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   const handleSave = async () => {
     if (!user) {
-      toast.info("Sign in to save leads to your account");
+      saveLocalLead(lead);
+      toast.success("Saved locally — sign in to sync to your account");
       return;
     }
     setSaving(true);
@@ -292,6 +293,16 @@ function LeadCard({ lead }: { lead: Lead }) {
       return;
     }
     toast.success("Lead saved");
+  };
+
+  const handleEmailPitch = () => {
+    const { subject, body } = generateEmailPitch(lead.niche, lead.business_name);
+    if (lead.email) {
+      window.open(mailtoLink(lead.email, subject, body), "_blank");
+    } else {
+      navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+      toast.success("Email pitch copied (no email on file)");
+    }
   };
 
   const waColor = lead.whatsapp_score >= 80 ? "bg-success" : lead.whatsapp_score >= 55 ? "bg-warning" : "bg-muted-foreground";
