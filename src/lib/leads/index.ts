@@ -43,3 +43,38 @@ export function generatePitch(niche: string, businessName: string) {
   };
   return templates[niche.trim().toLowerCase()] ?? templates.default;
 }
+
+// --- Email pitch ---
+
+export function generateEmailPitch(niche: string, businessName: string): { subject: string; body: string } {
+  const key = niche.trim().toLowerCase();
+  const subjects: Record<string, string> = {
+    dentist: `Helping ${businessName} get more patient bookings`,
+    hotel: `More direct bookings for ${businessName} (skip OTA fees)`,
+    restaurant: `Idea to double ${businessName}'s weekend bookings`,
+    hospital: `Helping ${businessName} reach more patients online`,
+    salon: `Filling ${businessName}'s appointment book with Instagram`,
+    default: `Quick idea to bring ${businessName} more local clients`,
+  };
+  const subject = subjects[key] ?? subjects.default;
+  const body = `Hi ${businessName} team,
+
+I came across ${businessName} while researching ${niche || "businesses"} in your area, and I noticed a few quick wins that could bring you significantly more clients in the next 30 days.
+
+I work with local businesses to:
+ • Build a clean, high-converting website
+ • Set up Google My Business + WhatsApp for instant inquiries
+ • Run targeted Instagram & Google campaigns
+
+Would you be open to a 10-minute call this week to see if it's a fit?
+
+Best,
+Nexloft Digital
+nexloftdigital.com`;
+  return { subject, body };
+}
+
+export function mailtoLink(email: string | null, subject: string, body: string): string {
+  if (!email) return "#";
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

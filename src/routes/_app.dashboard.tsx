@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info, MapPin, ExternalLink, Mail } from "lucide-react";
+import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info, MapPin, ExternalLink, Mail, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { searchLeads, whatsappLink, generatePitch, type Lead } from "@/lib/leads";
+import { searchLeads, whatsappLink, generatePitch, generateEmailPitch, mailtoLink, type Lead } from "@/lib/leads";
 import type { LeadSourceId } from "@/lib/leads/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
+import { saveLocalLead } from "@/lib/leads/storage";
+import { leadsToCsv, downloadCsv } from "@/lib/leads/export";
 import { toast } from "sonner";
 import { PitchGenerator } from "@/components/PitchGenerator";
 
@@ -20,7 +22,19 @@ export const Route = createFileRoute("/_app/dashboard")({
 const NICHES = ["dentist", "hotel", "restaurant", "salon", "lawyer", "church", "school", "boutique", "hospital"];
 const COUNTRIES = ["Nigeria", "Ghana", "Kenya", "South Africa", "Egypt"];
 
-type Filter = "all" | "no-website" | "has-phone" | "high-score" | "low-reviews" | "no-social" | "wa-ready";
+type Filter =
+  | "all"
+  | "no-website"
+  | "has-phone"
+  | "has-email"
+  | "has-whatsapp"
+  | "high-score"
+  | "low-reviews"
+  | "no-social"
+  | "wa-ready"
+  | "hot"
+  | "medium"
+  | "low";
 
 const SOURCE_LABEL: Record<LeadSourceId, string> = {
   mock: "Demo data",
@@ -63,14 +77,27 @@ function DashboardPage() {
       switch (filter) {
         case "no-website": return !l.website;
         case "has-phone": return !!l.phone;
+        case "has-email": return !!l.email;
+        case "has-whatsapp": return !!l.whatsapp_url;
         case "high-score": return l.lead_score >= 75;
         case "low-reviews": return l.reviews_estimate < 25;
         case "no-social": return !l.instagram && !l.facebook;
         case "wa-ready": return l.whatsapp_score >= 70;
+        case "hot": return l.quality_label === "Hot Lead";
+        case "medium": return l.quality_label === "Medium Opportunity";
+        case "low": return l.quality_label === "Low Priority";
         default: return true;
       }
     });
   }, [results, filter]);
+
+  const handleExport = () => {
+    if (!filtered.length) return;
+    const csv = leadsToCsv(filtered);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`nexloft-leads-${niche}-${city}-${stamp}.csv`, csv);
+    toast.success(`Exported ${filtered.length} leads`);
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
@@ -160,29 +187,39 @@ function DashboardPage() {
                 </p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                ["all", "All"],
-                ["wa-ready", "WhatsApp Ready"],
-                ["no-website", "No website"],
-                ["has-phone", "Has phone"],
-                ["high-score", "High score"],
-                ["low-reviews", "Low reviews"],
-                ["no-social", "No social"],
-              ] as [Filter, string][]).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setFilter(k)}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
-                    (filter === k
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background text-muted-foreground hover:text-foreground")
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-col items-end gap-2">
+              <Button size="sm" variant="outline" onClick={handleExport} disabled={!filtered.length}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
+              </Button>
+              <div className="flex flex-wrap justify-end gap-2">
+                {([
+                  ["all", "All"],
+                  ["hot", "🔥 Hot"],
+                  ["medium", "Medium"],
+                  ["low", "Low"],
+                  ["has-phone", "Has phone"],
+                  ["has-email", "Has email"],
+                  ["has-whatsapp", "Has WhatsApp"],
+                  ["no-website", "No website"],
+                  ["no-social", "No social"],
+                  ["wa-ready", "WA Ready"],
+                  ["high-score", "High score"],
+                  ["low-reviews", "Low reviews"],
+                ] as [Filter, string][]).map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => setFilter(k)}
+                    className={
+                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
+                      (filter === k
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -226,7 +263,8 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   const handleSave = async () => {
     if (!user) {
-      toast.info("Sign in to save leads to your account");
+      saveLocalLead(lead);
+      toast.success("Saved locally — sign in to sync to your account");
       return;
     }
     setSaving(true);
@@ -255,6 +293,16 @@ function LeadCard({ lead }: { lead: Lead }) {
       return;
     }
     toast.success("Lead saved");
+  };
+
+  const handleEmailPitch = () => {
+    const { subject, body } = generateEmailPitch(lead.niche, lead.business_name);
+    if (lead.email) {
+      window.open(mailtoLink(lead.email, subject, body), "_blank");
+    } else {
+      navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+      toast.success("Email pitch copied (no email on file)");
+    }
   };
 
   const waColor = lead.whatsapp_score >= 80 ? "bg-success" : lead.whatsapp_score >= 55 ? "bg-warning" : "bg-muted-foreground";
@@ -389,6 +437,9 @@ function LeadCard({ lead }: { lead: Lead }) {
         </Button>
         <Button size="sm" variant="outline" onClick={handleCopyContact}>
           <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy contact
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleEmailPitch}>
+          <Mail className="mr-1.5 h-3.5 w-3.5" /> Email pitch
         </Button>
         <PitchGenerator lead={lead} />
         <Button size="sm" variant="outline" onClick={handleSave} disabled={saving}>
