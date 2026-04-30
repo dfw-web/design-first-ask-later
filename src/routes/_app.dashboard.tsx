@@ -77,14 +77,27 @@ function DashboardPage() {
       switch (filter) {
         case "no-website": return !l.website;
         case "has-phone": return !!l.phone;
+        case "has-email": return !!l.email;
+        case "has-whatsapp": return !!l.whatsapp_url;
         case "high-score": return l.lead_score >= 75;
         case "low-reviews": return l.reviews_estimate < 25;
         case "no-social": return !l.instagram && !l.facebook;
         case "wa-ready": return l.whatsapp_score >= 70;
+        case "hot": return l.quality_label === "Hot Lead";
+        case "medium": return l.quality_label === "Medium Opportunity";
+        case "low": return l.quality_label === "Low Priority";
         default: return true;
       }
     });
   }, [results, filter]);
+
+  const handleExport = () => {
+    if (!filtered.length) return;
+    const csv = leadsToCsv(filtered);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`nexloft-leads-${niche}-${city}-${stamp}.csv`, csv);
+    toast.success(`Exported ${filtered.length} leads`);
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
