@@ -188,7 +188,7 @@ function DashboardPage() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {filtered.map((lead) => (
-              <LeadCard key={lead.business_name} lead={lead} />
+              <LeadCard key={lead.source_id ?? lead.business_name} lead={lead} />
             ))}
             {filtered.length === 0 && (
               <div className="col-span-full rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
