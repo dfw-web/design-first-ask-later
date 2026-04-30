@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info, MapPin, ExternalLink, Mail } from "lucide-react";
+import { Search, Globe, Phone, Instagram, Facebook, MessageCircle, Sparkles, Bookmark, Copy, Loader2, Info, MapPin, ExternalLink, Mail, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { searchLeads, whatsappLink, generatePitch, type Lead } from "@/lib/leads";
+import { searchLeads, whatsappLink, generatePitch, generateEmailPitch, mailtoLink, type Lead } from "@/lib/leads";
 import type { LeadSourceId } from "@/lib/leads/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
+import { saveLocalLead } from "@/lib/leads/storage";
+import { leadsToCsv, downloadCsv } from "@/lib/leads/export";
 import { toast } from "sonner";
 import { PitchGenerator } from "@/components/PitchGenerator";
 
