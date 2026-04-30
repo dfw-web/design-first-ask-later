@@ -259,16 +259,43 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   const waColor = lead.whatsapp_score >= 80 ? "bg-success" : lead.whatsapp_score >= 55 ? "bg-warning" : "bg-muted-foreground";
 
+  const qualityColor =
+    lead.quality_label === "Hot Lead"
+      ? "border-success/50 bg-success/10 text-success"
+      : lead.quality_label === "Medium Opportunity"
+        ? "border-warning/50 bg-warning/10 text-warning"
+        : "border-border bg-muted text-muted-foreground";
+
+  const handleCopyContact = async () => {
+    const lines = [
+      lead.business_name,
+      lead.phone ? `Phone: ${lead.phone}` : null,
+      lead.email ? `Email: ${lead.email}` : null,
+      lead.website ? `Website: ${lead.website}` : null,
+      `Maps: ${lead.maps_url}`,
+    ].filter(Boolean);
+    await navigator.clipboard.writeText(lines.join("\n"));
+    toast.success("Contact copied");
+  };
+
   return (
     <article className="rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-elegant">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold">{lead.business_name}</h3>
-          <p className="text-xs text-muted-foreground">{lead.niche} · {lead.city}, {lead.country}</p>
+          <p className="text-xs text-muted-foreground">
+            {lead.location_type ?? lead.niche} · {lead.city}, {lead.country}
+          </p>
+          {lead.address && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{lead.address}</p>
+          )}
+          <p className="mt-1.5 text-xs text-foreground/80 italic">{lead.opportunity_reason}</p>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="text-2xl font-semibold tabular-nums">{lead.lead_score}</div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Lead score</div>
+        <div className="flex flex-col items-end gap-1">
+          <div className="text-2xl font-semibold tabular-nums leading-none">{lead.lead_score}</div>
+          <span className={"rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider " + qualityColor}>
+            {lead.quality_label}
+          </span>
         </div>
       </div>
 
@@ -285,6 +312,11 @@ function LeadCard({ lead }: { lead: Lead }) {
             <Phone className="h-3 w-3" /> {lead.phone}
           </span>
         )}
+        {lead.email && (
+          <a href={`mailto:${lead.email}`} className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1 hover:bg-secondary/70">
+            <Mail className="h-3 w-3" /> Email
+          </a>
+        )}
         {lead.instagram && (
           <a href={lead.instagram} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1 hover:bg-secondary/70">
             <Instagram className="h-3 w-3" />
@@ -295,7 +327,9 @@ function LeadCard({ lead }: { lead: Lead }) {
             <Facebook className="h-3 w-3" />
           </a>
         )}
-        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1">★ {lead.reviews_estimate} reviews</span>
+        {lead.reviews_estimate > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1">★ {lead.reviews_estimate} reviews</span>
+        )}
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-background p-3">
@@ -325,15 +359,46 @@ function LeadCard({ lead }: { lead: Lead }) {
           onClick={handleOpenWhatsApp}
           disabled={!lead.phone}
         >
-          <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> Open WhatsApp
+          <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
         </Button>
+        <Button size="sm" variant="outline" asChild>
+          <a href={lead.maps_url} target="_blank" rel="noreferrer">
+            <MapPin className="mr-1.5 h-3.5 w-3.5" /> Maps
+          </a>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline">
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Find more
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem asChild>
+              <a href={lead.find_more.google} target="_blank" rel="noreferrer">Google Search</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={lead.find_more.maps} target="_blank" rel="noreferrer">Google Maps</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={lead.find_more.instagram} target="_blank" rel="noreferrer">Instagram</a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button size="sm" variant="outline" onClick={handleCopyLink} disabled={!lead.phone}>
           <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy link
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCopyContact}>
+          <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy contact
         </Button>
         <PitchGenerator lead={lead} />
         <Button size="sm" variant="outline" onClick={handleSave} disabled={saving}>
           <Bookmark className="mr-1.5 h-3.5 w-3.5" /> {saving ? "Saving..." : "Save"}
         </Button>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>Source: {lead.source === "openstreetmap" ? "OpenStreetMap" : "Demo"}</span>
+        <span>Found {new Date(lead.found_at).toLocaleDateString()}</span>
       </div>
     </article>
   );
